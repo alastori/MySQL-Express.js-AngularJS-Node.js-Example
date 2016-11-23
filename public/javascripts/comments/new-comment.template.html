@@ -1,0 +1,14 @@
+<div class="col-md-6 col-md-offset-3" style="padding-top:20px;">
+  <form name="addComment" ng-submit="addComment.$valid && $ctrl.addComment()" 
+        class="form" novalidate>
+    <div class="form-group">
+      <textarea class="form-control" rows="5" placeholder="New Comment" 
+                ng-model="$ctrl.comment" required></textarea>
+    </div>
+    <br />
+    <button type="submit" class="btn btn-info btn-xs" 
+            ng-disabled="addComment.$invalid">Submit</button>
+    <button type="button" ng-click="$ctrl.cancelAddComment()" 
+            class="btn btn-warning btn-xs">Cancel</button>
+  </form>
+</div>

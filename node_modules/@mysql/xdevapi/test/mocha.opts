@@ -1,0 +1,5 @@
+-R spec
+--recursive
+--throw-deprecation
+--check-leaks
+--require ./test/config.js

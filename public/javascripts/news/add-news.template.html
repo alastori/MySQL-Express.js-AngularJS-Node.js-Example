@@ -1,0 +1,21 @@
+<div class="col-md-6 col-md-offset-3" style="padding-top:20px;">
+  <form name="addNews" ng-submit="addNews.$valid && $ctrl.addNews()" 
+        class="form" novalidate>
+    <div class="form-group">
+      <input type="text" class="form-control" placeholder="Title" 
+             ng-model="$ctrl.title" required></input>
+    </div>
+    <div class="form-group">
+      <input type="text" class="form-control" placeholder="Link" 
+             ng-model="$ctrl.link" required></input>
+    </div>
+    <div class="form-group">
+      <textarea class="form-control" rows="5" placeholder="Introduction" 
+                ng-model="$ctrl.introduction" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-info btn-xs" 
+            ng-disabled="addNews.$invalid">Submit</button>
+    <button type="button" ng-click="$ctrl.cancelAddNews()" 
+            class="btn btn-warning btn-xs">Cancel</button>
+  </form>
+</div>

@@ -1,0 +1,43 @@
+<div class="container" style="padding-top:20px;">
+  <div class="row">
+    <div class="col-md-3">
+      <p>Search: <input ng-model="$ctrl.search" /></p>
+      <p>
+        Sort by:
+        <select ng-model="$ctrl.order">
+          <option value="title">Alphabetical</option>
+          <option value="published">Newest</option>
+        </select>
+      </p>
+      <a class="btn btn-default btn-xs" href="#!/addnews/" 
+         role="button">Add New Post</a>
+    </div>
+    <div class="col-md-9">
+      <ul>
+        <li ng-repeat="post in $ctrl.news | filter:$ctrl.search | orderBy:$ctrl.order" 
+            class="thumbnail">
+          <a ng-show="post.link" href="{{post.link}}" target="_blank">
+            {{post.title}}
+          </a>
+          <p>
+            {{post.introduction}}
+            <br />
+            <span style="font-size:11px;">Published: {{post.published}}</span>
+          </p>
+          <p>
+            <span>Comments</span></br>
+            <ul>
+              <li ng-repeat="comment in post.comments">
+                {{comment}}
+              </li>
+            </ul>
+            <br />
+            <a class="btn btn-default btn-xs" href="#!/comments/{{post._id}}" 
+               role="button">Add New Comment</a>
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,30 @@
+[
+{
+"title": "MySQL 8.0: Testing Improvements",
+"link": "http://mysqlserverteam.com/mysql-8-0-testing-improvements/",
+"introduction": "The first DMR of MySQL 8 was recently released. While a DMR ...",
+"published": "Thu Sep 29 2016",
+"comments":[]
+},
+{
+"title": "MySQL 8.0: Making User Management DDLs Atomic",
+"link": "http://mysqlserverteam.com/mysql-8-0-making-user-management-ddls-atomic/",
+"introduction": "With MySQL 8.0, we are bringing in an important change in the ...",
+"published": "Mon Sep 26 2016",
+"comments":[]
+},
+{
+"title": "An overview of the Group Replication performance",
+"link": "http://mysqlhighavailability.com/an-overview-of-the-group-replication-performance/",
+"introduction": "In this blog post we will present a first look at the ...",
+"published": "Wed Sep 21 2016",
+"comments":[]
+},
+{
+"title": "MySQL Enterprise Monitor 3.3 Is now GA!",
+"link": "https://blogs.oracle.com/MySQL/entry/mysql_enterprise_monitor_3_3",
+"introduction":"This is the best in class tool for monitoring and management of ...",
+"published": "Tue Sep 20 2016",
+"comments":[]
+}
+]

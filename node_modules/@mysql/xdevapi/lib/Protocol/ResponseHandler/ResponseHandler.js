@@ -1,0 +1,124 @@
+/*
+ * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ *
+ * MySQL Connector/Node.js is licensed under the terms of the GPLv2
+ * <http://www.gnu.org/licenses/old-licenses/gpl-2.0.html>, like most
+ * MySQL Connectors. There are special exceptions to the terms and
+ * conditions of the GPLv2 as it is applied to this software, see the
+ * FLOSS License Exception
+ * <http://www.mysql.com/about/legal/licensing/foss-exception.html>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; version 2 of the
+ * License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301  USA
+ */
+
+"use strict";
+
+// TODO - Bad dependency for Client.serverGoneMessageId
+var Client = require('../Client');
+var Encoding = require('../Encoding');
+var Messages = require('../Messages');
+
+/**
+ * Abstract prototype for a ResponseHandler
+ *
+ * Each inherited object should add methods for the messages they want to handle. Common utility functions
+ * are provided from here.
+ *
+ * @constructor
+ */
+function ResponseHandler() {
+    this._resolve = null;
+    this._fail = null;
+    this._notices = [];
+}
+
+module.exports = ResponseHandler;
+
+/**
+ * Directly send a message to the server, without adding to the queue or returning a promise.
+ *
+ * @param stream {Stream}
+ * @param buffer {Buffer} Ready packet, will be sent as is
+ */
+ResponseHandler.prototype.sendDirect = function (stream, buffer) {
+    stream.write(buffer);
+};
+
+/**
+ * Quese the handler, creates our promise and sends the message
+ * @param queue {WorkQueue}
+ * @param stream {Stream}
+ * @param buffer {Buffer} Ready packet, will be sent as is
+ * @returns {Promise}
+ */
+ResponseHandler.prototype.sendMessage = function (queue, stream, buffer) {
+    var self = this;
+
+    return new Promise(function (resolve, fail) {
+        self._resolve = resolve;
+        self._fail = fail;
+
+        var entry = function (message, queueDone) {
+            if (message.messageId === Client.serverGoneMessageId) {
+                // TODO: This needs a way better handling approach for this, probably the Queue has to learn about this
+                queueDone();
+                fail(new Error("The server has gone away"));
+                return;
+            }
+            if (!self[message.messageId]) {
+                queueDone();
+                fail(new Error("Unexpected message " + message.messageId));
+                return;
+            }
+            self[message.messageId](message.decoded, queueDone);
+        };
+
+        // TODO Make this configurable - we don'T want to keep all memory on production with mass inserts etc.
+        entry.request = buffer;
+
+        queue.push(entry);
+        self.sendDirect(stream, buffer);
+    });
+};
+
+ResponseHandler.prototype[Messages.ServerMessages.NOTICE] = function (message) {
+    const notice = Encoding.decodeNotice(message);
+    this._notices.push(notice);
+};
+
+/**
+ * Common handler for errors.
+ *
+ * If a handler wants to handle these differently they can do by overriding
+ *
+ * @param message
+ */
+ResponseHandler.prototype[Messages.ServerMessages.ERROR] = function (message, queueDone) {
+    queueDone();
+    const error = new Error(message.msg);
+    error.info = message;
+    this._fail(error);
+};
+
+/**
+ * common handler invoked when the connection terminates.
+ *
+ * If a Handler wants to react it can override, while there is no guarantee this will be called for all queued handlers
+ */
+ResponseHandler.prototype.close = function () {
+    this._fail(new Error("Server has gone away"));
+};
+

@@ -1,0 +1,167 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('mysql-news:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+//load the data that will be loaded to our collection
+var initialData= require('../data/news.json');
+//load the xdevapi module
+var mysql = require('@mysql/xdevapi');
+//load the events module
+var EventEmitter = require("events").EventEmitter;
+//create an instance of the EventEmitter
+var eventEmitter = new EventEmitter();
+//set the name of the event being listened for and the event handler function
+eventEmitter.once('initDb', initializeDatabase);
+//emit the event to initialize the database
+eventEmitter.emit('initDb');
+
+function initializeDatabase() {
+  //call the function that create our schema and collection
+  configureDataBase(function (resultMsg) {
+    //logs the message returned
+    console.log(resultMsg);
+
+    /**
+     * Listen on provided port, on all network interfaces.
+     */
+    server.listen(port);
+    server.on('error', onError);
+    server.on('listening', onListening);
+  });
+}
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+function configureDataBase(callback) {
+  //get the session to interact with the database passing the required parameters
+  mysql.getSession({
+    host: 'localhost',
+    port: '33060',
+    dbUser: 'root',
+    dbPassword: 'Root#123'
+  }).then(function (session) {
+    //get the schema from the session created
+    var schema = session.getSchema('mysqlNews');
+    //verify if the current schema exists in the database server
+    schema.existsInDatabase().then(function (exists) {
+      if (!exists) {
+        //if schema doesn't exists create it
+        session.createSchema('mysqlNews').then(function (newSchema) {
+          //specify that the flow will continue until all the promises are completed
+          Promise.all([
+              //create news collection
+              newSchema.createCollection('news').then(function (newsColl) {
+                //upload the test data for the news collection
+                newsColl.add(initialData).execute().then(function (newsAdded) {
+                  var rowsAffected = newsAdded.getAffectedItemsCount();
+                  if (rowsAffected <= 0) {
+                    console.log('No news Added');
+                  }
+                  else {
+                    console.log(rowsAffected + ' news Added');
+                  }
+                }).catch(function (err) {
+                  console.log(err.message);
+                  console.log(err.stack);
+                });
+              }).catch(function (err) {
+                console.log(err.message);
+                console.log(err.stack);
+              })
+          ]).then(function () {
+            session.close();
+            callback('Finished: Collections created and initialized');
+          });
+        }).catch(function (err) {
+          console.log(err.message);
+          console.log(err.stack);
+        });
+      }
+      else {
+        session.close();
+        callback('Database Already Configured');
+      }
+    });
+
+  }).catch(function (err) {
+    console.log(err.message);
+    console.log(err.stack);
+  });
+}
+
